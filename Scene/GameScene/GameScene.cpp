@@ -5,10 +5,6 @@
 GameScene::~GameScene() {
 	// スプライトの解放
 	delete model_;
-#ifdef _DEBUG
-	delete debugCamera_;
-	debugCamera_ = nullptr;
-#endif
 	delete skydome_;
 	delete skydomeModel_;
 	delete player_;
@@ -134,7 +130,7 @@ void GameScene::Initialize() {
 	camera_.Initialize();
 
 #ifdef _DEBUG
-	debugCamera_ = new DebugCamera(1280, 720);
+	debugCamera_ = std::make_unique<DebugCamera>(1280, 720);
 #endif
 
 	// ==============================
@@ -435,27 +431,7 @@ void GameScene::CheckPlayerEnemyCollisions(Player* player, Enemy* enemy) {
 		return;
 	}
 
-	// 重なり量を計算（Enemy::OnEnemyCollision と同じ考え方）
-	const float overlapX = (std::min)(aabbPlayer.max.x - aabbEnemy.min.x, aabbEnemy.max.x - aabbPlayer.min.x);
-	const float overlapY = (std::min)(aabbPlayer.max.y - aabbEnemy.min.y, aabbEnemy.max.y - aabbPlayer.min.y);
-	const float overlapZ = (std::min)(aabbPlayer.max.z - aabbEnemy.min.z, aabbEnemy.max.z - aabbPlayer.min.z);
-
-	const bool verticalPriority = (overlapY <= overlapX && overlapY <= overlapZ);
-	const bool playerAbove = (player->GetWorldPosition().y >= enemy->GetWorldPosition().y + 0.1f);
-	const bool fallingFast = player->IsHipDropping() || (player->GetVelocity().y < -1.0f);
-
-	if (verticalPriority && playerAbove && fallingFast) {
-		// ★踏みつけ撃破
-		enemy->Kill();
-		player->BounceFromStomp();
-		// ★必要ならここでSEやエフェクトを再生
-		// Audio::GetInstance()->PlayWave(...);
-		return;
-	}
-
-	// ★踏めていない：従来どおり双方の処理（＝プレイヤー死亡）
-	player->OnEnemyCollision(enemy);
-	enemy->OnPlayerCollision(player);
+	player;
 }
 
 // =================================

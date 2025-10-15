@@ -173,7 +173,7 @@ private:
 
 	KamataEngine::Camera camera_;
 
-	KamataEngine::DebugCamera* debugCamera_ = nullptr;
+	std::unique_ptr<KamataEngine::DebugCamera> debugCamera_ = nullptr;
 	bool isDebugCameraActive_ = false;
 
 	CameraController* cameraController_ = nullptr;

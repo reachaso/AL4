@@ -21,23 +21,25 @@ void Player::Update() {
 	// 移動処理
 	// =======================
 
-	Move(); // 移動・ジャンプ入力処理
+	collisionMapInfo_ = {}; // 衝突判定情報を初期化
 
-	CollisionMapInfo collisionMapInfo;
+	collisionMapInfo_.move = velocity_ * deltaTime_; // 移動量を設定
 
-	collisionMapInfo.move = velocity_ * deltaTime_; // 移動量を設定
+	Move(); // 移動処理
 
-	CollisionMapCheck(collisionMapInfo); // 移動量を加味して衝突判定を行う
+	CollisionMapCheck(collisionMapInfo_); // 移動量を加味して衝突判定を行う
 
-	MoveByCollisionCheck(collisionMapInfo); // 衝突判定後の移動量を適用
+	MoveByCollisionCheck(collisionMapInfo_); // 衝突判定後の移動量を適用
 
-	OnCellingCollision(collisionMapInfo); // 天井と接触している場合
+	OnCellingCollision(collisionMapInfo_); // 天井と接触している場合
 
 	//OnFloorCollision(collisionMapInfo); // 床と接触している場合
 
-	OnWallCollision(collisionMapInfo); // 壁と接触している場合
+	OnWallCollision(collisionMapInfo_); // 壁と接触している場合
 
-	SwitchOnGround(collisionMapInfo); // 接地状態の切り替え処理
+	Jump(collisionMapInfo_); // ジャンプ処理
+
+	SwitchOnGround(collisionMapInfo_); // 接地状態の切り替え処理
 
 	ModelRotate(); // 回転処理
 
@@ -143,37 +145,8 @@ void Player::Move() {
         velocity_.x *= (1.0f - kAttenuation);  
     }  
 
-    Jump(); // ジャンプ入力処理
-
-	ImGui::Begin("Player");
-	ImGui::Text("onGround: %d", onGround_);
-	ImGui::Text("doubleJump: %d", doubleJump_);
-	ImGui::Text("velocity_.y: %.2f", velocity_.y);
-	ImGui::End();
-
 	// 落下処理
 	if (!onGround_) {
-
-		//// 空中：SPACEの「押した瞬間」でヒップドロップ開始
-		// if (!hipDrop_ && Input::GetInstance()->TriggerKey(DIK_SPACE)) {
-		//	hipDrop_ = true;
-		//	// 真下に一気に落とし始める
-		//	velocity_.y = -kHipDropStartSpeed;
-		// }
-
-		// if (hipDrop_) {
-		//	// ヒップドロップ中は更に強い下向き加速度＋横をグッと抑える
-		//	velocity_.y -= kHipDropExtraAccel * deltaTime_;
-		//	if (velocity_.y < -kHipDropMaxFallSpeed) {
-		//		velocity_.y = -kHipDropMaxFallSpeed;
-		//	}
-		//	velocity_.x *= (1.0f - kHipDropHorizAtten);
-		// } else {
-		//	// 通常の落下
-		//	velocity_ += Vector3(0.0f, -kGravityAcceleration * deltaTime_, 0.0f);
-		//	velocity_.y = (std::max)(velocity_.y, -kLimitFallSpeed);
-		// }
-
 		// 通常の落下
 		velocity_ += Vector3(0.0f, -kGravityAcceleration * deltaTime_, 0.0f);
 		velocity_.y = (std::max)(velocity_.y, -kLimitFallSpeed);
@@ -182,26 +155,43 @@ void Player::Move() {
 	}
 }
 
-void Player::Jump() {
+void Player::Jump(CollisionMapInfo& info) {
 	// ジャンプ入力
 	if (Input::GetInstance()->TriggerKey(DIK_SPACE) || Input::GetInstance()->TriggerKey(DIK_UP)) {
-		if (doubleJump_) {
-			return;
+
+		// 壁に接触していて、かつ空中であれば壁ジャンプ
+		if (info.wallCollision && !onGround_) {
+			if (wallJump_) {
+				return; // 既に壁ジャンプしていたら何もしない
+			}
+			velocity_.y = 0.0f; // Y速度をリセット
+			velocity_.x = 0.0f; // 壁ジャンプ時にX速度をリセット
+			velocity_ += Vector3((lrDirection_ == LRDirection::kRight) ? -kJumpX : kJumpX, kJumpAcceleration, 0.0f);
+
+			wallJump_ = true;    // 壁ジャンプ使用中フラグを立てる
+			//doubleJump_ = false; // 壁ジャンプをしたら2段ジャンプの権利を復活させる
+
+		}
+		// それ以外の場合のジャンプ処理
+		else {
+			// 通常ジャンプ (地上)
+			if (onGround_) {
+				velocity_ += Vector3(0.0f, kJumpAcceleration, 0.0f);
+			}
+			// 2段ジャンプ (空中)
+			else if (!doubleJump_) {
+				velocity_.y = 0.0f; // Y速度をリセットしてからジャンプ
+				velocity_ += Vector3(0.0f, kJumpAcceleration, 0.0f);
+				doubleJump_ = true; // 2段ジャンプを使用済みにする
+			}
 		}
 
-		velocity_.y = 0.0f; // ジャンプ開始時にY速度をリセット
-
-		velocity_ += Vector3(0.0f, kJumpAcceleration, 0.0f);
-
-		if (!onGround_ && !landing_) {
-			doubleJump_ = true; // 2段ジャンプを使用済みにする
-		}
-
+		// ジャンプが実行された場合（速度が上向きになった場合）
 		if (velocity_.y > 0.0f) {
 			onGround_ = false;
 			landing_ = false;
 		}
-	} 
+	}
 }
 
 // =======================
@@ -457,8 +447,7 @@ void Player::SwitchOnGround(CollisionMapInfo& info) {
 			velocity_.y = 0.0f;
 
 			doubleJump_ = false; // 2段ジャンプをリセット
-
-			//hipDrop_ = false; // ヒップドロップ終了
+			wallJump_ = false;   // 壁ジャンプ使用中フラグをリセット
 		}
 	}
 }
@@ -473,10 +462,4 @@ void Player::OnEnemyCollision(Enemy* enemy) {
 
 	isDead_ = true; // プレイヤーの死亡フラグを立てる
 
-}
-
-void Player::BounceFromStomp() {
-	hipDrop_ = false;  // 踏んだ時点で解除
-	onGround_ = false; // 空中へ
-	velocity_.y = kStompBounceSpeed;
 }

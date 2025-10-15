@@ -64,10 +64,12 @@ private:
 	bool onGround_ = false; // 地面にいるかどうか
 	bool landing_ = false;  // 着地フラグ
 	bool doubleJump_ = false; // 二段ジャンプ可能フラグ
+	bool wallJump_ = false;   // 壁ジャンプ可能フラグ
 
 	static inline const float kGravityAcceleration = 30.0f; // 重力加速度
 	static inline const float kLimitFallSpeed = 20.0f;      // 最大落下速度
 	static inline const float kJumpAcceleration = 20.0f;    // ジャンプ加速度
+	static inline const float kJumpX = 40.0f;              // ジャンプ時の横移動力
 
 	// マップチップフィールド
 	MapChipField* mapChipField_ = nullptr;
@@ -82,14 +84,7 @@ private:
 
 	bool isDead_ = false; // 死亡フラグ
 
-	bool hipDrop_ = false;
-
-	// ★ヒップドロップ関連定数
-	static inline const float kHipDropStartSpeed = 28.0f;   // 開始直後の下向き速度
-	static inline const float kHipDropMaxFallSpeed = 35.0f; // 最大落下速度（通常より強め）
-	static inline const float kHipDropExtraAccel = 120.0f;  // 追加加速（真下にグッと落とす）
-	static inline const float kHipDropHorizAtten = 0.8f;    // 空中ヒップドロップ中の横減衰率
-	static inline const float kStompBounceSpeed = 18.0f;    // 踏んだ後の反発上向き速度
+	CollisionMapInfo collisionMapInfo_;
 
 public:
 	void Initialize(Camera* camera, const Vector3& position);
@@ -120,7 +115,6 @@ public:
 
 	const Vector3& GetVelocity() const { return velocity_; }
 	bool IsOnGround() const { return onGround_; }
-	bool IsHipDropping() const { return hipDrop_; }
 
 	void SetMapChipField(MapChipField* mapChipField) { mapChipField_ = mapChipField; }
 
@@ -137,7 +131,7 @@ public:
 	// 移動入力
 	void Move();
 	// ジャンプ入力
-	void Jump();
+	void Jump(CollisionMapInfo& info);
 	// モデルの旋回処理
 	void ModelRotate();
 
@@ -160,6 +154,4 @@ public:
 	void SwitchOnGround(CollisionMapInfo& info);
 
 	void OnEnemyCollision(Enemy* enemy);
-
-	void BounceFromStomp();
 };
