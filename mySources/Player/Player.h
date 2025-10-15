@@ -63,6 +63,7 @@ private:
 	// ジャンプ
 	bool onGround_ = false; // 地面にいるかどうか
 	bool landing_ = false;  // 着地フラグ
+	bool doubleJump_ = false; // 二段ジャンプ可能フラグ
 
 	static inline const float kGravityAcceleration = 30.0f; // 重力加速度
 	static inline const float kLimitFallSpeed = 20.0f;      // 最大落下速度

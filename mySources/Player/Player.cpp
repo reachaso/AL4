@@ -143,40 +143,60 @@ void Player::Move() {
         velocity_.x *= (1.0f - kAttenuation);  
     }  
 
-    if (!onGround_) {
-
-		// 空中：SPACEの「押した瞬間」でヒップドロップ開始
-		if (!hipDrop_ && Input::GetInstance()->TriggerKey(DIK_SPACE)) {
-			hipDrop_ = true;
-			// 真下に一気に落とし始める
-			velocity_.y = -kHipDropStartSpeed;
-		}
-
-		if (hipDrop_) {
-			// ヒップドロップ中は更に強い下向き加速度＋横をグッと抑える
-			velocity_.y -= kHipDropExtraAccel * deltaTime_;
-			if (velocity_.y < -kHipDropMaxFallSpeed) {
-				velocity_.y = -kHipDropMaxFallSpeed;
-			}
-			velocity_.x *= (1.0f - kHipDropHorizAtten);
-		} else {
-			// 通常の落下
-			velocity_ += Vector3(0.0f, -kGravityAcceleration * deltaTime_, 0.0f);
-			velocity_.y = (std::max)(velocity_.y, -kLimitFallSpeed);
-		}
-		return; // 空中はここで終了
-	}
-
-
     // ジャンプ入力  
-    if (Input::GetInstance()->PushKey(DIK_SPACE) || Input::GetInstance()->PushKey(DIK_UP)) {  
+    if (Input::GetInstance()->TriggerKey(DIK_SPACE) || Input::GetInstance()->TriggerKey(DIK_UP)) {
+		if (doubleJump_) {
+			return;
+		}
+
+		velocity_.y = 0.0f; // ジャンプ開始時にY速度をリセット
+
         velocity_ += Vector3(0.0f, kJumpAcceleration, 0.0f);  
+
+		if (!onGround_ && !landing_) {
+			doubleJump_ = true; // 2段ジャンプを使用済みにする
+		}
 
         if (velocity_.y > 0.0f) {  
             onGround_ = false;  
             landing_ = false;  
         }  
-    }  
+    } 
+
+	ImGui::Begin("Player");
+	ImGui::Text("onGround: %d", onGround_);
+	ImGui::Text("doubleJump: %d", doubleJump_);
+	ImGui::Text("velocity_.y: %.2f", velocity_.y);
+	ImGui::End();
+
+	if (!onGround_) {
+
+		//// 空中：SPACEの「押した瞬間」でヒップドロップ開始
+		// if (!hipDrop_ && Input::GetInstance()->TriggerKey(DIK_SPACE)) {
+		//	hipDrop_ = true;
+		//	// 真下に一気に落とし始める
+		//	velocity_.y = -kHipDropStartSpeed;
+		// }
+
+		// if (hipDrop_) {
+		//	// ヒップドロップ中は更に強い下向き加速度＋横をグッと抑える
+		//	velocity_.y -= kHipDropExtraAccel * deltaTime_;
+		//	if (velocity_.y < -kHipDropMaxFallSpeed) {
+		//		velocity_.y = -kHipDropMaxFallSpeed;
+		//	}
+		//	velocity_.x *= (1.0f - kHipDropHorizAtten);
+		// } else {
+		//	// 通常の落下
+		//	velocity_ += Vector3(0.0f, -kGravityAcceleration * deltaTime_, 0.0f);
+		//	velocity_.y = (std::max)(velocity_.y, -kLimitFallSpeed);
+		// }
+
+		// 通常の落下
+		velocity_ += Vector3(0.0f, -kGravityAcceleration * deltaTime_, 0.0f);
+		velocity_.y = (std::max)(velocity_.y, -kLimitFallSpeed);
+
+		return; // 空中はここで終了
+	}
 }
 
 // =======================
@@ -431,7 +451,9 @@ void Player::SwitchOnGround(CollisionMapInfo& info) {
 			// Y速度をゼロにする
 			velocity_.y = 0.0f;
 
-			hipDrop_ = false; // ヒップドロップ終了
+			doubleJump_ = false; // 2段ジャンプをリセット
+
+			//hipDrop_ = false; // ヒップドロップ終了
 		}
 	}
 }
