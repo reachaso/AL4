@@ -25,11 +25,20 @@ void Game::Inisialize() {
 	CommonBGM::GetInstance()->SetVolume(0.1f);
 	CommonBGM::GetInstance()->Play();
 
-	const bool kBootFromStageSelect = true;
+	/*const bool kBootFromStageSelect = true;
 	if (kBootFromStageSelect) {
 		scene = Scene::kStageSelect;
 		stageSelectScene = new StageSelectScene();
 		stageSelectScene->Initialize();
+		return;
+	}*/
+
+	const bool kBootFromGame = true;
+	if (kBootFromGame) {
+		scene = Scene::kGame;
+		gameScene = new GameScene();
+		gameScene->Initialize();
+		gameScene->SetStageCSV("stage/stage1.csv");
 		return;
 	}
 #endif

@@ -143,25 +143,7 @@ void Player::Move() {
         velocity_.x *= (1.0f - kAttenuation);  
     }  
 
-    // ジャンプ入力  
-    if (Input::GetInstance()->TriggerKey(DIK_SPACE) || Input::GetInstance()->TriggerKey(DIK_UP)) {
-		if (doubleJump_) {
-			return;
-		}
-
-		velocity_.y = 0.0f; // ジャンプ開始時にY速度をリセット
-
-        velocity_ += Vector3(0.0f, kJumpAcceleration, 0.0f);  
-
-		if (!onGround_ && !landing_) {
-			doubleJump_ = true; // 2段ジャンプを使用済みにする
-		}
-
-        if (velocity_.y > 0.0f) {  
-            onGround_ = false;  
-            landing_ = false;  
-        }  
-    } 
+    Jump(); // ジャンプ入力処理
 
 	ImGui::Begin("Player");
 	ImGui::Text("onGround: %d", onGround_);
@@ -169,6 +151,7 @@ void Player::Move() {
 	ImGui::Text("velocity_.y: %.2f", velocity_.y);
 	ImGui::End();
 
+	// 落下処理
 	if (!onGround_) {
 
 		//// 空中：SPACEの「押した瞬間」でヒップドロップ開始
@@ -197,6 +180,28 @@ void Player::Move() {
 
 		return; // 空中はここで終了
 	}
+}
+
+void Player::Jump() {
+	// ジャンプ入力
+	if (Input::GetInstance()->TriggerKey(DIK_SPACE) || Input::GetInstance()->TriggerKey(DIK_UP)) {
+		if (doubleJump_) {
+			return;
+		}
+
+		velocity_.y = 0.0f; // ジャンプ開始時にY速度をリセット
+
+		velocity_ += Vector3(0.0f, kJumpAcceleration, 0.0f);
+
+		if (!onGround_ && !landing_) {
+			doubleJump_ = true; // 2段ジャンプを使用済みにする
+		}
+
+		if (velocity_.y > 0.0f) {
+			onGround_ = false;
+			landing_ = false;
+		}
+	} 
 }
 
 // =======================

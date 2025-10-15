@@ -136,6 +136,8 @@ public:
 
 	// 移動入力
 	void Move();
+	// ジャンプ入力
+	void Jump();
 	// モデルの旋回処理
 	void ModelRotate();
 
